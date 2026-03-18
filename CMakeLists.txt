@@ -11,8 +11,8 @@ if(POLICY CMP0177)
     cmake_policy(SET CMP0177 NEW)
 endif()
 
-project(LabRecorder
-    VERSION habs1.0.0
+project(HabsRecorder
+    VERSION 1.0.0
     DESCRIPTION "Record and write LabStreamingLayer streams to an XDF file"
     HOMEPAGE_URL "https://github.com/labstreaminglayer/App-LabRecorder/"
     LANGUAGES C CXX
