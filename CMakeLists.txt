@@ -12,7 +12,7 @@ if(POLICY CMP0177)
 endif()
 
 project(LabRecorder
-    VERSION 1.17.0
+    VERSION habs1.0.0
     DESCRIPTION "Record and write LabStreamingLayer streams to an XDF file"
     HOMEPAGE_URL "https://github.com/labstreaminglayer/App-LabRecorder/"
     LANGUAGES C CXX
