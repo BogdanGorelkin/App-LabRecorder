@@ -240,13 +240,20 @@ jobs:
           # Remove original unsigned package
           rm -f *.tar.gz
 
-          # Get project version from CMakeLists.txt
-          VERSION=$(grep -A1 'project(LabRecorder' ../CMakeLists.txt | grep VERSION | sed 's/.*VERSION \([0-9.]*\).*/\1/')
+          # Get app name and version from CMakeLists.txt
+          APP_NAME=$(sed -n 's/^[[:space:]]*set(LABRECORDER_APP_NAME[[:space:]]*"\([^"]*\)".*/\1/p' ../CMakeLists.txt | head -1)
+          VERSION=$(sed -n 's/^[[:space:]]*set(LABRECORDER_APP_VERSION[[:space:]]*"\([^"]*\)".*/\1/p' ../CMakeLists.txt | head -1)
+
+          # Backward-compatible defaults
+          APP_NAME=${APP_NAME:-LabRecorder}
+          VERSION=${VERSION:-$(grep -A1 'project(LabRecorder' ../CMakeLists.txt | grep VERSION | sed 's/.*VERSION \([0-9.]*\).*/\1/')}
+
           echo "Detected version: $VERSION"
+          echo "Detected app name: $APP_NAME"
 
           # Create signed package with CLI and its Frameworks (universal binary)
-          tar -cvzf "LabRecorder-${VERSION}-macOS_universal-signed.tar.gz" \
-            LabRecorder.app LabRecorderCLI Frameworks LabRecorder.cfg LICENSE README.md
+          tar -cvzf "${APP_NAME}-${VERSION}-macOS_universal-signed.tar.gz" \
+            "${APP_NAME}.app" LabRecorderCLI Frameworks LabRecorder.cfg LICENSE README.md
 
           echo "Created package:"
           ls -la *.tar.gz

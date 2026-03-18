@@ -11,8 +11,8 @@ if(POLICY CMP0177)
     cmake_policy(SET CMP0177 NEW)
 endif()
 
-project(HabsRecorder
-    VERSION 1.0.0
+project(LabRecorder
+    VERSION 1.17.0
     DESCRIPTION "Record and write LabStreamingLayer streams to an XDF file"
     HOMEPAGE_URL "https://github.com/labstreaminglayer/App-LabRecorder/"
     LANGUAGES C CXX
@@ -26,6 +26,10 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 # Build Options
 # =============================================================================
 option(LABRECORDER_BUILD_GUI "Build the GUI application (requires Qt6)" ON)
+
+# Fork branding/customization
+set(LABRECORDER_APP_NAME "HABSLabRecorder" CACHE STRING "Application/bundle name for built artifacts")
+set(LABRECORDER_APP_VERSION "1.17.0" CACHE STRING "Application version for bundle/package metadata")
 
 # =============================================================================
 # LSL Discovery Options
@@ -194,11 +198,14 @@ if(LABRECORDER_BUILD_GUI)
         LSL::lsl
     )
 
+    # Keep stable target names in CMake while branding produced binary names.
+    set_target_properties(${PROJECT_NAME} PROPERTIES OUTPUT_NAME "${LABRECORDER_APP_NAME}")
+
     # macOS bundle configuration
     if(APPLE)
         set(MACOSX_BUNDLE_GUI_IDENTIFIER "com.labstreaminglayer.${PROJECT_NAME}")
-        set(MACOSX_BUNDLE_BUNDLE_VERSION "${PROJECT_VERSION}")
-        set(MACOSX_BUNDLE_SHORT_VERSION_STRING "${PROJECT_VERSION}")
+        set(MACOSX_BUNDLE_BUNDLE_VERSION "${LABRECORDER_APP_VERSION}")
+        set(MACOSX_BUNDLE_SHORT_VERSION_STRING "${LABRECORDER_APP_VERSION}")
     endif()
 endif()
 
@@ -274,7 +281,7 @@ endif()
 # Install auxiliary files
 set(_config_dest "${INSTALL_DATADIR}")
 if(APPLE AND LABRECORDER_BUILD_GUI)
-    set(_config_dest "${INSTALL_BINDIR}/${PROJECT_NAME}.app/Contents/MacOS")
+    set(_config_dest "${INSTALL_BINDIR}/${LABRECORDER_APP_NAME}.app/Contents/MacOS")
 endif()
 install(FILES
     ${PROJECT_NAME}.cfg
@@ -290,7 +297,7 @@ if(APPLE)
     # macOS: Install framework to GUI bundle and CLI Frameworks directory
     if(LABRECORDER_BUILD_GUI)
         LSL_install_liblsl(
-            FRAMEWORK_DESTINATION "${INSTALL_BINDIR}/${PROJECT_NAME}.app/Contents/Frameworks"
+            FRAMEWORK_DESTINATION "${INSTALL_BINDIR}/${LABRECORDER_APP_NAME}.app/Contents/Frameworks"
         )
     endif()
     LSL_install_liblsl(FRAMEWORK_DESTINATION "Frameworks")
@@ -338,14 +345,14 @@ endif()
 LSL_get_target_arch()
 LSL_get_os_name()
 
+set(CPACK_PACKAGE_VERSION "${LABRECORDER_APP_VERSION}")
 set(CPACK_PACKAGE_NAME "${PROJECT_NAME}")
-set(CPACK_PACKAGE_VERSION "${PROJECT_VERSION}")
 set(CPACK_PACKAGE_VENDOR "Labstreaminglayer")
 set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "${PROJECT_DESCRIPTION}")
 set(CPACK_PACKAGE_HOMEPAGE_URL "${PROJECT_HOMEPAGE_URL}")
 set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_CURRENT_SOURCE_DIR}/LICENSE")
 set(CPACK_RESOURCE_FILE_README "${CMAKE_CURRENT_SOURCE_DIR}/README.md")
-set(CPACK_PACKAGE_FILE_NAME "${PROJECT_NAME}-${PROJECT_VERSION}-${LSL_OS}_${LSL_ARCH}")
+set(CPACK_PACKAGE_FILE_NAME "${PROJECT_NAME}-${LABRECORDER_APP_VERSION}-${LSL_OS}_${LSL_ARCH}")
 set(CPACK_STRIP_FILES ON)
 
 if(WIN32)
