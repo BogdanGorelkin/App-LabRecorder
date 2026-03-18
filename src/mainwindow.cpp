@@ -708,10 +708,8 @@ void MainWindow::rcsSelectStreams(QTcpSocket *socket, const QStringList &streamN
 }
 
 void MainWindow::rcsStartRecording() {
-	// since we want to avoid a pop-up window when streams are missing or unchecked,
-	// we'll check all the streams and start recording
+	// Avoid pop-ups during remote start but preserve current stream selection.
 	hideWarnings = true;
-	selectAllStreams();
 	startRecording();
 }
 
