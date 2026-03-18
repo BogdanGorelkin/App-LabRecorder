@@ -4,6 +4,7 @@
 #include <QDateTime>
 #include <QDebug>
 #include <QFileDialog>
+#include <QSet>
 #include <QMessageBox>
 #include <QSettings>
 #include <QStandardPaths>
@@ -623,19 +624,24 @@ void MainWindow::rcsCheckBoxChanged(bool checked) { enableRcs(checked); }
 void MainWindow::enableRcs(bool bEnable) {
 	if (rcs) {
 		if (!bEnable) {
+			qInfo() << "RCS: disabling remote control socket";
 			disconnect(rcs.get());
             rcs = nullptr;
         }
 	} else if (bEnable) {
 		uint16_t port = ui->rcsport->value();
+		qInfo() << "RCS: enabling remote control socket on port" << port;
 		rcs = std::make_unique<RemoteControlSocket>(port);
 		// TODO: Add some method to RemoteControlSocket to report if its server is listening (i.e. was successful).
 		connect(rcs.get(), &RemoteControlSocket::refresh_streams, this, &MainWindow::refreshStreams);
 		connect(rcs.get(), &RemoteControlSocket::start, this, &MainWindow::rcsStartRecording);
 		connect(rcs.get(), &RemoteControlSocket::stop, this, &MainWindow::rcsStopRecording);
 		connect(rcs.get(), &RemoteControlSocket::filename, this, &MainWindow::rcsUpdateFilename);
+		connect(rcs.get(), &RemoteControlSocket::request_streams, this, &MainWindow::rcsSendAvailableStreams);
+		connect(rcs.get(), &RemoteControlSocket::select_streams, this, &MainWindow::rcsSelectStreams);
 		connect(rcs.get(), &RemoteControlSocket::select_all, this, &MainWindow::selectAllStreams);
 		connect(rcs.get(), &RemoteControlSocket::select_none, this, &MainWindow::selectNoStreams);
+		qInfo() << "RCS: signal connections established";
 	}
 	bool oldState = ui->rcsCheckBox->blockSignals(true);
 	ui->rcsCheckBox->setChecked(bEnable);
@@ -647,6 +653,58 @@ void MainWindow::rcsportValueChangedInt(int value) {
         enableRcs(false);  // Will also uncheck box.
 		enableRcs(true);   // Will also check box.
     }
+}
+
+QStringList MainWindow::availableStreamNames() {
+	qInfo() << "RCS: collecting available streams";
+	refreshStreams();
+	QStringList streamNames;
+	streamNames.reserve(knownStreams.count());
+	for (auto &stream : knownStreams) { streamNames << stream.listName(); }
+	qInfo() << "RCS: available stream count:" << streamNames.size();
+	return streamNames;
+}
+
+QString MainWindow::applyRemoteStreamSelection(const QStringList &streamNames) {
+	refreshStreams();
+
+	QSet<QString> requested(streamNames.begin(), streamNames.end());
+	QSet<QString> available;
+	for (auto &stream : knownStreams) { available.insert(stream.listName()); }
+
+	QStringList unknownStreams;
+	for (const auto &streamName : requested) {
+		if (!available.contains(streamName)) unknownStreams << streamName;
+	}
+	unknownStreams.sort();
+	if (!unknownStreams.isEmpty())
+		return QStringLiteral("ERR Unknown streams\n%1").arg(unknownStreams.join('\n'));
+
+	for (int index = 0; index < ui->streamList->count(); ++index) {
+		auto *item = ui->streamList->item(index);
+		item->setCheckState(requested.contains(item->text()) ? Qt::Checked : Qt::Unchecked);
+	}
+	for (auto &stream : knownStreams) { stream.checked = requested.contains(stream.listName()); }
+	missingStreams.clear();
+
+	QStringList selectedStreams = requested.values();
+	selectedStreams.sort();
+	return QStringLiteral("OK Selected %1 stream(s)\n%2")
+		.arg(selectedStreams.size())
+		.arg(selectedStreams.join('\n'));
+}
+
+void MainWindow::rcsSendAvailableStreams(QTcpSocket *socket) {
+	qInfo() << "RCS: request_streams received in MainWindow, preparing response";
+	QStringList streamNames = availableStreamNames();
+	QString response = QStringLiteral("OK %1 stream(s)").arg(streamNames.size());
+	if (!streamNames.isEmpty()) response += '\n' + streamNames.join('\n');
+	qInfo() << "RCS: sending streams response with" << streamNames.size() << "entries";
+	rcs->sendReply(socket, response);
+}
+
+void MainWindow::rcsSelectStreams(QTcpSocket *socket, const QStringList &streamNames) {
+	rcs->sendReply(socket, applyRemoteStreamSelection(streamNames));
 }
 
 void MainWindow::rcsStartRecording() {

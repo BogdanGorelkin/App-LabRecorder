@@ -4,6 +4,7 @@
 #include <QComboBox>
 #include <QListWidget>
 #include <QMainWindow>
+#include <QTcpSocket>
 #include <QStringList>
 #include <QTimer>
 #include <memory> //for std::unique_ptr
@@ -58,10 +59,14 @@ private slots:
 	void rcsUpdateFilename(QString s);
 	void rcsStartRecording();
 	void rcsStopRecording();
+	void rcsSendAvailableStreams(QTcpSocket *socket);
+	void rcsSelectStreams(QTcpSocket *socket, const QStringList &streamNames);
 	void rcsportValueChangedInt(int value);
 
 private:
 	QString replaceFilename(QString fullfile) const;
+	QStringList availableStreamNames();
+	QString applyRemoteStreamSelection(const QStringList &streamNames);
 	// function for loading / saving the config file
 	QString find_config_file(const char *filename);
 	QString counterPlaceholder() const;

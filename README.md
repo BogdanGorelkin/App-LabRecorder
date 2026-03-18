@@ -87,10 +87,16 @@ If you check the box to EnableRCS then LabRecorder exposes some rudimentary cont
 Currently supported commands include:
 * `select all`
 * `select none`
+* `select {Stream Name (Host)} {Other Stream (Host)}`
 * `start`
 * `stop`
 * `update`
+* `streams`
 * `filename ...`
+
+`streams` refreshes discovery and returns the currently available stream entries exactly as they appear in LabRecorder, one per line after an `OK <count> stream(s)` header.
+
+`select {Stream Name (Host)} ...` replaces the current selection with the provided available-stream entries. The stream labels must match the values returned by `streams`.
 
 `filename` is followed by a series of space-delimited options enclosed in curly braces. e.g. {root:C:\root_data_dir}
 * `root` - Sets the root data directory.
@@ -108,7 +114,9 @@ For example, in Python:
 ```python
 import socket
 s = socket.create_connection(("localhost", 22345))
-s.sendall(b"select all\n")
+s.sendall(b"streams\n")
+print(s.recv(4096).decode())
+s.sendall(b"select {BioSemi (AcqPC)} {Markers (StimPC)}\n")
 s.sendall(b"filename {root:C:\\Data\\} {template:exp%n\\%p_block_%b.xdf} {run:2} {participant:P003} {task:MemoryGuided}\n")
 s.sendall(b"start\n")
 ```
